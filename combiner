@@ -1,0 +1,2 @@
+loadstring(game:HttpGet("https://raw.githubusercontent.com/Shadowguiearlyaccess/Sigma-jerk-hub/refs/heads/main/custom_moveset"))()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/Shadowguiearlyaccess/Sigma-jerk-hub/refs/heads/main/credits"))()
