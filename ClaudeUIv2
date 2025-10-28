@@ -631,4 +631,230 @@ function Library:MakeWindow(config)
             textbox.Parent = textboxFrame
             
             local textboxInputCorner = Instance.new("UICorner")
-            textboxInputCorner.Corner
+            textboxInputCorner.CornerRadius = UDim.new(0, 4)
+            textboxInputCorner.Parent = textbox
+            
+            textbox.FocusLost:Connect(function()
+                callback(textbox.Text)
+                if textDisappear then
+                    textbox.Text = ""
+                end
+            end)
+            
+            return textbox
+        end
+        
+        -- Add Label
+        function tab:AddLabel(text)
+            local label = Instance.new("TextLabel")
+            label.Size = UDim2.new(1, -10, 0, 30)
+            label.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+            label.Text = text
+            label.TextColor3 = Color3.fromRGB(255, 255, 255)
+            label.Font = Enum.Font.Gotham
+            label.TextSize = 14
+            label.Parent = tabContent
+            
+            local labelCorner = Instance.new("UICorner")
+            labelCorner.CornerRadius = UDim.new(0, 6)
+            labelCorner.Parent = label
+            
+            return {
+                Set = function(self, newText)
+                    label.Text = newText
+                end
+            }
+        end
+        
+        -- Add Paragraph
+        function tab:AddParagraph(title, content)
+            local paragraphFrame = Instance.new("Frame")
+            paragraphFrame.Size = UDim2.new(1, -10, 0, 80)
+            paragraphFrame.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+            paragraphFrame.Parent = tabContent
+            
+            local paragraphCorner = Instance.new("UICorner")
+            paragraphCorner.CornerRadius = UDim.new(0, 6)
+            paragraphCorner.Parent = paragraphFrame
+            
+            local titleLabel = Instance.new("TextLabel")
+            titleLabel.Size = UDim2.new(1, -20, 0, 20)
+            titleLabel.Position = UDim2.new(0, 10, 0, 5)
+            titleLabel.BackgroundTransparency = 1
+            titleLabel.Text = title
+            titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+            titleLabel.Font = Enum.Font.GothamBold
+            titleLabel.TextSize = 15
+            titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+            titleLabel.Parent = paragraphFrame
+            
+            local contentLabel = Instance.new("TextLabel")
+            contentLabel.Size = UDim2.new(1, -20, 1, -30)
+            contentLabel.Position = UDim2.new(0, 10, 0, 25)
+            contentLabel.BackgroundTransparency = 1
+            contentLabel.Text = content
+            contentLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+            contentLabel.Font = Enum.Font.Gotham
+            contentLabel.TextSize = 13
+            contentLabel.TextXAlignment = Enum.TextXAlignment.Left
+            contentLabel.TextYAlignment = Enum.TextYAlignment.Top
+            contentLabel.TextWrapped = true
+            contentLabel.Parent = paragraphFrame
+            
+            return {
+                Set = function(self, newTitle, newContent)
+                    titleLabel.Text = newTitle or titleLabel.Text
+                    contentLabel.Text = newContent or contentLabel.Text
+                end
+            }
+        end
+        
+        -- Add Color Picker
+        function tab:AddColorpicker(config)
+            config = config or {}
+            local colorName = config.Name or "Color Picker"
+            local default = config.Default or Color3.fromRGB(255, 255, 255)
+            local callback = config.Callback or function() end
+            
+            local colorFrame = Instance.new("Frame")
+            colorFrame.Size = UDim2.new(1, -10, 0, 35)
+            colorFrame.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+            colorFrame.Parent = tabContent
+            
+            local colorCorner = Instance.new("UICorner")
+            colorCorner.CornerRadius = UDim.new(0, 6)
+            colorCorner.Parent = colorFrame
+            
+            local label = Instance.new("TextLabel")
+            label.Size = UDim2.new(1, -60, 1, 0)
+            label.Position = UDim2.new(0, 10, 0, 0)
+            label.BackgroundTransparency = 1
+            label.Text = colorName
+            label.TextColor3 = Color3.fromRGB(255, 255, 255)
+            label.Font = Enum.Font.Gotham
+            label.TextSize = 14
+            label.TextXAlignment = Enum.TextXAlignment.Left
+            label.Parent = colorFrame
+            
+            local colorDisplay = Instance.new("Frame")
+            colorDisplay.Size = UDim2.new(0, 40, 0, 25)
+            colorDisplay.Position = UDim2.new(1, -45, 0.5, -12.5)
+            colorDisplay.BackgroundColor3 = default
+            colorDisplay.Parent = colorFrame
+            
+            local colorDisplayCorner = Instance.new("UICorner")
+            colorDisplayCorner.CornerRadius = UDim.new(0, 4)
+            colorDisplayCorner.Parent = colorDisplay
+            
+            local colorButton = Instance.new("TextButton")
+            colorButton.Size = UDim2.new(1, 0, 1, 0)
+            colorButton.BackgroundTransparency = 1
+            colorButton.Text = ""
+            colorButton.Parent = colorDisplay
+            
+            local currentColor = default
+            
+            colorButton.MouseButton1Click:Connect(function()
+                -- Simple color randomizer for demo
+                local newColor = Color3.fromRGB(math.random(0, 255), math.random(0, 255), math.random(0, 255))
+                currentColor = newColor
+                tween(colorDisplay, {BackgroundColor3 = newColor})
+                callback(newColor)
+            end)
+            
+            return {
+                Set = function(self, color)
+                    currentColor = color
+                    tween(colorDisplay, {BackgroundColor3 = color})
+                    callback(color)
+                end
+            }
+        end
+        
+        -- Add Keybind
+        function tab:AddBind(config)
+            config = config or {}
+            local bindName = config.Name or "Keybind"
+            local default = config.Default or Enum.KeyCode.E
+            local hold = config.Hold or false
+            local callback = config.Callback or function() end
+            
+            local bindFrame = Instance.new("Frame")
+            bindFrame.Size = UDim2.new(1, -10, 0, 35)
+            bindFrame.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+            bindFrame.Parent = tabContent
+            
+            local bindCorner = Instance.new("UICorner")
+            bindCorner.CornerRadius = UDim.new(0, 6)
+            bindCorner.Parent = bindFrame
+            
+            local label = Instance.new("TextLabel")
+            label.Size = UDim2.new(1, -80, 1, 0)
+            label.Position = UDim2.new(0, 10, 0, 0)
+            label.BackgroundTransparency = 1
+            label.Text = bindName
+            label.TextColor3 = Color3.fromRGB(255, 255, 255)
+            label.Font = Enum.Font.Gotham
+            label.TextSize = 14
+            label.TextXAlignment = Enum.TextXAlignment.Left
+            label.Parent = bindFrame
+            
+            local bindButton = Instance.new("TextButton")
+            bindButton.Size = UDim2.new(0, 70, 0, 25)
+            bindButton.Position = UDim2.new(1, -75, 0.5, -12.5)
+            bindButton.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+            bindButton.Text = default.Name
+            bindButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+            bindButton.Font = Enum.Font.Gotham
+            bindButton.TextSize = 12
+            bindButton.Parent = bindFrame
+            
+            local bindBtnCorner = Instance.new("UICorner")
+            bindBtnCorner.CornerRadius = UDim.new(0, 4)
+            bindBtnCorner.Parent = bindButton
+            
+            local currentKey = default
+            local binding = false
+            
+            bindButton.MouseButton1Click:Connect(function()
+                binding = true
+                bindButton.Text = "..."
+            end)
+            
+            UserInputService.InputBegan:Connect(function(input, gameProcessed)
+                if binding then
+                    if input.KeyCode ~= Enum.KeyCode.Unknown then
+                        currentKey = input.KeyCode
+                        bindButton.Text = input.KeyCode.Name
+                        binding = false
+                    end
+                elseif input.KeyCode == currentKey and not gameProcessed then
+                    callback()
+                end
+            end)
+            
+            return {
+                Set = function(self, key)
+                    currentKey = key
+                    bindButton.Text = key.Name
+                end
+            }
+        end
+        
+        return tab
+    end
+    
+    -- Destroy Window
+    function window:Destroy()
+        screenGui:Destroy()
+    end
+    
+    return window
+end
+
+-- Initialize function
+function Library:Init()
+    print("UI Library Loaded Successfully!")
+end
+
+return Library
