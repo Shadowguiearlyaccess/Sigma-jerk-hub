@@ -1,0 +1,616 @@
+-- CoolGui Library v1.0
+-- A modern admin panel UI library for Roblox inspired by COOlgui
+
+local CoolGui = {}
+CoolGui.__index = CoolGui
+CoolGui.Version = "1.0.0"
+
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+
+-- Default Configuration
+local CONFIG = {
+	PrimaryColor = Color3.fromRGB(200, 0, 0),
+	BackgroundColor = Color3.fromRGB(20, 20, 20),
+	ButtonColor = Color3.fromRGB(40, 40, 40),
+	TextColor = Color3.fromRGB(255, 255, 255),
+	BorderColor = Color3.fromRGB(200, 0, 0),
+	Font = Enum.Font.GothamBold,
+	HeaderFont = Enum.Font.GothamBlack,
+	TweenSpeed = 0.2,
+}
+
+-- Window Class
+local Window = {}
+Window.__index = Window
+
+function CoolGui:CreateWindow(config)
+	local self = setmetatable({}, Window)
+	
+	self.Title = config.Title or "COOlgui"
+	self.Folder = config.Folder or "CoolGui"
+	self.Size = config.Size or UDim2.new(0, 600, 0, 450)
+	self.Tabs = {}
+	self.Sections = {}
+	self.CurrentTab = nil
+	self.Visible = true
+	self.ToggleKey = config.ToggleKey or Enum.KeyCode.K
+	
+	self.ScreenGui = self:CreateGui()
+	
+	-- Toggle Key Handler
+	UserInputService.InputBegan:Connect(function(input, processed)
+		if processed then return end
+		if input.KeyCode == self.ToggleKey then
+			self:Toggle()
+		end
+	end)
+	
+	return self
+end
+
+function Window:CreateGui()
+	local screenGui = Instance.new("ScreenGui")
+	screenGui.Name = "CoolGuiLibrary"
+	screenGui.ResetOnSpawn = false
+	screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+	screenGui.Parent = game:GetService("CoreGui")
+	
+	-- Main Frame
+	local mainFrame = Instance.new("Frame")
+	mainFrame.Name = "MainFrame"
+	mainFrame.Size = self.Size
+	mainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+	mainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+	mainFrame.BackgroundColor3 = CONFIG.BackgroundColor
+	mainFrame.BorderSizePixel = 3
+	mainFrame.BorderColor3 = CONFIG.BorderColor
+	mainFrame.Parent = screenGui
+	
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, 8)
+	corner.Parent = mainFrame
+	
+	-- Header
+	local header = Instance.new("Frame")
+	header.Name = "Header"
+	header.Size = UDim2.new(1, 0, 0, 40)
+	header.BackgroundColor3 = CONFIG.PrimaryColor
+	header.BorderSizePixel = 0
+	header.Parent = mainFrame
+	
+	local headerCorner = Instance.new("UICorner")
+	headerCorner.CornerRadius = UDim.new(0, 8)
+	headerCorner.Parent = header
+	
+	local titleLabel = Instance.new("TextLabel")
+	titleLabel.Size = UDim2.new(0, 300, 1, 0)
+	titleLabel.Position = UDim2.new(0, 20, 0, 0)
+	titleLabel.BackgroundTransparency = 1
+	titleLabel.Text = self.Title
+	titleLabel.TextColor3 = CONFIG.TextColor
+	titleLabel.Font = CONFIG.HeaderFont
+	titleLabel.TextSize = 20
+	titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+	titleLabel.Parent = header
+	
+	-- Settings Button
+	local settingsBtn = Instance.new("TextButton")
+	settingsBtn.Name = "SettingsButton"
+	settingsBtn.Size = UDim2.new(0, 100, 0, 30)
+	settingsBtn.Position = UDim2.new(1, -110, 0, 5)
+	settingsBtn.BackgroundColor3 = CONFIG.BackgroundColor
+	settingsBtn.BorderSizePixel = 1
+	settingsBtn.BorderColor3 = CONFIG.BorderColor
+	settingsBtn.Text = "Settings"
+	settingsBtn.TextColor3 = CONFIG.TextColor
+	settingsBtn.Font = CONFIG.Font
+	settingsBtn.TextSize = 14
+	settingsBtn.Parent = mainFrame
+	
+	local settingsCorner = Instance.new("UICorner")
+	settingsCorner.CornerRadius = UDim.new(0, 4)
+	settingsCorner.Parent = settingsBtn
+	
+	-- Navigation Buttons Container
+	local navFrame = Instance.new("Frame")
+	navFrame.Name = "Navigation"
+	navFrame.Size = UDim2.new(1, -20, 0, 35)
+	navFrame.Position = UDim2.new(0, 10, 0, 45)
+	navFrame.BackgroundTransparency = 1
+	navFrame.Parent = mainFrame
+	
+	-- Navigation Buttons (< > < >)
+	local navButtons = {"<", ">", "<", ">"}
+	for i, text in ipairs(navButtons) do
+		local btn = Instance.new("TextButton")
+		btn.Size = UDim2.new(0.23, 0, 1, 0)
+		btn.Position = UDim2.new((i-1) * 0.25 + 0.01, 0, 0, 0)
+		btn.BackgroundColor3 = CONFIG.ButtonColor
+		btn.BorderSizePixel = 2
+		btn.BorderColor3 = CONFIG.BorderColor
+		btn.Text = text
+		btn.TextColor3 = CONFIG.TextColor
+		btn.Font = CONFIG.Font
+		btn.TextSize = 16
+		btn.Parent = navFrame
+		
+		local corner = Instance.new("UICorner")
+		corner.CornerRadius = UDim.new(0, 4)
+		corner.Parent = btn
+	end
+	
+	-- Content Area
+	local contentFrame = Instance.new("ScrollingFrame")
+	contentFrame.Name = "Content"
+	contentFrame.Size = UDim2.new(1, -20, 1, -130)
+	contentFrame.Position = UDim2.new(0, 10, 0, 90)
+	contentFrame.BackgroundTransparency = 1
+	contentFrame.BorderSizePixel = 0
+	contentFrame.ScrollBarThickness = 6
+	contentFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+	contentFrame.Parent = mainFrame
+	
+	local contentLayout = Instance.new("UIGridLayout")
+	contentLayout.CellSize = UDim2.new(0.48, 0, 0, 35)
+	contentLayout.CellPadding = UDim2.new(0.02, 0, 0, 5)
+	contentLayout.Parent = contentFrame
+	
+	-- Close Button
+	local closeBtn = Instance.new("TextButton")
+	closeBtn.Name = "CloseButton"
+	closeBtn.Size = UDim2.new(0, 100, 0, 30)
+	closeBtn.Position = UDim2.new(0.5, -50, 1, -40)
+	closeBtn.BackgroundColor3 = CONFIG.PrimaryColor
+	closeBtn.BorderSizePixel = 1
+	closeBtn.BorderColor3 = CONFIG.BorderColor
+	closeBtn.Text = "Close"
+	closeBtn.TextColor3 = CONFIG.TextColor
+	closeBtn.Font = CONFIG.Font
+	closeBtn.TextSize = 14
+	closeBtn.Parent = mainFrame
+	
+	local closeCorner = Instance.new("UICorner")
+	closeCorner.CornerRadius = UDim.new(0, 4)
+	closeCorner.Parent = closeBtn
+	
+	closeBtn.MouseButton1Click:Connect(function()
+		self:Destroy()
+	end)
+	
+	-- Make Draggable
+	self:MakeDraggable(mainFrame, header)
+	
+	self.MainFrame = mainFrame
+	self.ContentFrame = contentFrame
+	self.ContentLayout = contentLayout
+	
+	return screenGui
+end
+
+function Window:MakeDraggable(frame, dragArea)
+	local dragging = false
+	local dragInput, mousePos, framePos
+	
+	dragArea.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 then
+			dragging = true
+			mousePos = input.Position
+			framePos = frame.Position
+			
+			input.Changed:Connect(function()
+				if input.UserInputState == Enum.UserInputState.End then
+					dragging = false
+				end
+			end)
+		end
+	end)
+	
+	dragArea.InputChanged:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseMovement then
+			dragInput = input
+		end
+	end)
+	
+	UserInputService.InputChanged:Connect(function(input)
+		if input == dragInput and dragging then
+			local delta = input.Position - mousePos
+			frame.Position = UDim2.new(
+				framePos.X.Scale,
+				framePos.X.Offset + delta.X,
+				framePos.Y.Scale,
+				framePos.Y.Offset + delta.Y
+			)
+		end
+	end)
+end
+
+-- Section Class
+local Section = {}
+Section.__index = Section
+
+function Window:Section(config)
+	local self = setmetatable({}, Section)
+	
+	self.Title = config.Title or "Section"
+	self.Parent = config.Parent or self.ContentFrame
+	self.Window = self
+	
+	return self
+end
+
+-- Tab Class (acts as a section container)
+local Tab = {}
+Tab.__index = Tab
+
+function Section:Tab(config)
+	local self = setmetatable({}, Tab)
+	
+	self.Title = config.Title or "Tab"
+	self.Icon = config.Icon
+	self.Elements = {}
+	
+	return self
+end
+
+function Window:Tab(config)
+	return self:Section({}):Tab(config)
+end
+
+-- Button Element
+function Tab:Button(config)
+	local btn = Instance.new("TextButton")
+	btn.Name = config.Title or "Button"
+	btn.BackgroundColor3 = config.Color or CONFIG.ButtonColor
+	btn.BorderSizePixel = 2
+	btn.BorderColor3 = CONFIG.BorderColor
+	btn.Text = config.Title or "Button"
+	btn.TextColor3 = CONFIG.TextColor
+	btn.Font = CONFIG.Font
+	btn.TextSize = 12
+	btn.TextWrapped = true
+	btn.Parent = self.Parent or game.Players.LocalPlayer.PlayerGui.CoolGuiLibrary.MainFrame.Content
+	
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, 4)
+	corner.Parent = btn
+	
+	-- Hover Effect
+	btn.MouseEnter:Connect(function()
+		TweenService:Create(btn, TweenInfo.new(CONFIG.TweenSpeed), {
+			BackgroundColor3 = CONFIG.PrimaryColor
+		}):Play()
+	end)
+	
+	btn.MouseLeave:Connect(function()
+		TweenService:Create(btn, TweenInfo.new(CONFIG.TweenSpeed), {
+			BackgroundColor3 = config.Color or CONFIG.ButtonColor
+		}):Play()
+	end)
+	
+	btn.MouseButton1Click:Connect(function()
+		if config.Callback then
+			config.Callback()
+		end
+	end)
+	
+	table.insert(self.Elements, btn)
+	self:UpdateCanvasSize()
+	
+	return btn
+end
+
+-- Toggle Element
+function Tab:Toggle(config)
+	local toggleFrame = Instance.new("Frame")
+	toggleFrame.Name = config.Title or "Toggle"
+	toggleFrame.BackgroundColor3 = CONFIG.ButtonColor
+	toggleFrame.BorderSizePixel = 2
+	toggleFrame.BorderColor3 = CONFIG.BorderColor
+	toggleFrame.Parent = self.Parent or game.Players.LocalPlayer.PlayerGui.CoolGuiLibrary.MainFrame.Content
+	
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, 4)
+	corner.Parent = toggleFrame
+	
+	local label = Instance.new("TextLabel")
+	label.Size = UDim2.new(0.7, 0, 1, 0)
+	label.BackgroundTransparency = 1
+	label.Text = config.Title or "Toggle"
+	label.TextColor3 = CONFIG.TextColor
+	label.Font = CONFIG.Font
+	label.TextSize = 11
+	label.TextXAlignment = Enum.TextXAlignment.Left
+	label.TextWrapped = true
+	label.Parent = toggleFrame
+	
+	local indicator = Instance.new("Frame")
+	indicator.Size = UDim2.new(0, 20, 0, 20)
+	indicator.Position = UDim2.new(1, -25, 0.5, -10)
+	indicator.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
+	indicator.BorderSizePixel = 0
+	indicator.Parent = toggleFrame
+	
+	local indicatorCorner = Instance.new("UICorner")
+	indicatorCorner.CornerRadius = UDim.new(1, 0)
+	indicatorCorner.Parent = indicator
+	
+	local state = config.Value or false
+	
+	if state then
+		indicator.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
+	end
+	
+	local button = Instance.new("TextButton")
+	button.Size = UDim2.new(1, 0, 1, 0)
+	button.BackgroundTransparency = 1
+	button.Text = ""
+	button.Parent = toggleFrame
+	
+	button.MouseButton1Click:Connect(function()
+		state = not state
+		
+		TweenService:Create(indicator, TweenInfo.new(CONFIG.TweenSpeed), {
+			BackgroundColor3 = state and Color3.fromRGB(100, 255, 100) or Color3.fromRGB(255, 100, 100)
+		}):Play()
+		
+		if config.Callback then
+			config.Callback(state)
+		end
+	end)
+	
+	table.insert(self.Elements, toggleFrame)
+	self:UpdateCanvasSize()
+	
+	return toggleFrame
+end
+
+-- Input Element
+function Tab:Input(config)
+	local input = Instance.new("TextBox")
+	input.Name = config.Title or "Input"
+	input.Size = UDim2.new(0.48, 0, 0, 35)
+	input.BackgroundColor3 = CONFIG.ButtonColor
+	input.BorderSizePixel = 2
+	input.BorderColor3 = CONFIG.BorderColor
+	input.PlaceholderText = config.Placeholder or config.Title or "Input"
+	input.Text = config.Value or ""
+	input.TextColor3 = CONFIG.TextColor
+	input.Font = CONFIG.Font
+	input.TextSize = 12
+	input.ClearTextOnFocus = false
+	input.Parent = self.Parent or game.Players.LocalPlayer.PlayerGui.CoolGuiLibrary.MainFrame.Content
+	
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, 4)
+	corner.Parent = input
+	
+	input.FocusLost:Connect(function()
+		if config.Callback then
+			config.Callback(input.Text)
+		end
+	end)
+	
+	table.insert(self.Elements, input)
+	self:UpdateCanvasSize()
+	
+	return input
+end
+
+-- Slider Element
+function Tab:Slider(config)
+	local sliderFrame = Instance.new("Frame")
+	sliderFrame.Name = config.Title or "Slider"
+	sliderFrame.BackgroundColor3 = CONFIG.ButtonColor
+	sliderFrame.BorderSizePixel = 2
+	sliderFrame.BorderColor3 = CONFIG.BorderColor
+	sliderFrame.Parent = self.Parent or game.Players.LocalPlayer.PlayerGui.CoolGuiLibrary.MainFrame.Content
+	
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, 4)
+	corner.Parent = sliderFrame
+	
+	local label = Instance.new("TextLabel")
+	label.Size = UDim2.new(1, -10, 0, 15)
+	label.Position = UDim2.new(0, 5, 0, 2)
+	label.BackgroundTransparency = 1
+	label.Text = config.Title or "Slider"
+	label.TextColor3 = CONFIG.TextColor
+	label.Font = CONFIG.Font
+	label.TextSize = 10
+	label.TextXAlignment = Enum.TextXAlignment.Left
+	label.Parent = sliderFrame
+	
+	local sliderBar = Instance.new("Frame")
+	sliderBar.Size = UDim2.new(0.9, 0, 0, 6)
+	sliderBar.Position = UDim2.new(0.05, 0, 1, -12)
+	sliderBar.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+	sliderBar.BorderSizePixel = 0
+	sliderBar.Parent = sliderFrame
+	
+	local sliderCorner = Instance.new("UICorner")
+	sliderCorner.CornerRadius = UDim.new(1, 0)
+	sliderCorner.Parent = sliderBar
+	
+	local sliderFill = Instance.new("Frame")
+	sliderFill.Size = UDim2.new(0.5, 0, 1, 0)
+	sliderFill.BackgroundColor3 = CONFIG.PrimaryColor
+	sliderFill.BorderSizePixel = 0
+	sliderFill.Parent = sliderBar
+	
+	local fillCorner = Instance.new("UICorner")
+	fillCorner.CornerRadius = UDim.new(1, 0)
+	fillCorner.Parent = sliderFill
+	
+	local min = config.Value and config.Value.Min or 0
+	local max = config.Value and config.Value.Max or 100
+	local default = config.Value and config.Value.Default or 50
+	
+	local function updateSlider(value)
+		local percent = (value - min) / (max - min)
+		sliderFill.Size = UDim2.new(percent, 0, 1, 0)
+		label.Text = (config.Title or "Slider") .. ": " .. tostring(math.floor(value))
+		
+		if config.Callback then
+			config.Callback(value)
+		end
+	end
+	
+	updateSlider(default)
+	
+	local dragging = false
+	sliderBar.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 then
+			dragging = true
+		end
+	end)
+	
+	UserInputService.InputEnded:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 then
+			dragging = false
+		end
+	end)
+	
+	UserInputService.InputChanged:Connect(function(input)
+		if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+			local pos = (input.Position.X - sliderBar.AbsolutePosition.X) / sliderBar.AbsoluteSize.X
+			pos = math.clamp(pos, 0, 1)
+			local value = min + (max - min) * pos
+			updateSlider(value)
+		end
+	end)
+	
+	table.insert(self.Elements, sliderFrame)
+	self:UpdateCanvasSize()
+	
+	return sliderFrame
+end
+
+-- Dropdown Element
+function Tab:Dropdown(config)
+	local dropdownFrame = Instance.new("Frame")
+	dropdownFrame.Name = config.Title or "Dropdown"
+	dropdownFrame.BackgroundColor3 = CONFIG.ButtonColor
+	dropdownFrame.BorderSizePixel = 2
+	dropdownFrame.BorderColor3 = CONFIG.BorderColor
+	dropdownFrame.Parent = self.Parent or game.Players.LocalPlayer.PlayerGui.CoolGuiLibrary.MainFrame.Content
+	dropdownFrame.ClipsDescendants = true
+	
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, 4)
+	corner.Parent = dropdownFrame
+	
+	local label = Instance.new("TextLabel")
+	label.Size = UDim2.new(0.9, 0, 1, 0)
+	label.BackgroundTransparency = 1
+	label.Text = config.Title or "Dropdown"
+	label.TextColor3 = CONFIG.TextColor
+	label.Font = CONFIG.Font
+	label.TextSize = 11
+	label.TextXAlignment = Enum.TextXAlignment.Left
+	label.TextWrapped = true
+	label.Parent = dropdownFrame
+	
+	local arrow = Instance.new("TextLabel")
+	arrow.Size = UDim2.new(0, 20, 1, 0)
+	arrow.Position = UDim2.new(1, -20, 0, 0)
+	arrow.BackgroundTransparency = 1
+	arrow.Text = "▼"
+	arrow.TextColor3 = CONFIG.TextColor
+	arrow.Font = CONFIG.Font
+	arrow.TextSize = 12
+	arrow.Parent = dropdownFrame
+	
+	table.insert(self.Elements, dropdownFrame)
+	self:UpdateCanvasSize()
+	
+	return dropdownFrame
+end
+
+-- Update Canvas Size
+function Tab:UpdateCanvasSize()
+	local parent = self.Parent or game.Players.LocalPlayer.PlayerGui.CoolGuiLibrary.MainFrame.Content
+	local layout = parent:FindFirstChildOfClass("UIGridLayout")
+	if layout then
+		parent.CanvasSize = UDim2.new(0, 0, 0, layout.AbsoluteContentSize.Y + 10)
+	end
+end
+
+-- Window Methods
+function Window:Toggle()
+	self.Visible = not self.Visible
+	self.MainFrame.Visible = self.Visible
+end
+
+function Window:Show()
+	self.Visible = true
+	self.MainFrame.Visible = true
+end
+
+function Window:Hide()
+	self.Visible = false
+	self.MainFrame.Visible = false
+end
+
+function Window:Destroy()
+	self.ScreenGui:Destroy()
+end
+
+function Window:SetToggleKey(key)
+	self.ToggleKey = key
+end
+
+-- Notification
+function CoolGui:Notify(config)
+	local notif = Instance.new("Frame")
+	notif.Size = UDim2.new(0, 300, 0, 80)
+	notif.Position = UDim2.new(1, -320, 1, -100)
+	notif.BackgroundColor3 = CONFIG.BackgroundColor
+	notif.BorderSizePixel = 2
+	notif.BorderColor3 = CONFIG.PrimaryColor
+	notif.Parent = game:GetService("CoreGui"):FindFirstChild("CoolGuiLibrary") or game.Players.LocalPlayer.PlayerGui
+	
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, 8)
+	corner.Parent = notif
+	
+	local title = Instance.new("TextLabel")
+	title.Size = UDim2.new(1, -20, 0, 25)
+	title.Position = UDim2.new(0, 10, 0, 5)
+	title.BackgroundTransparency = 1
+	title.Text = config.Title or "Notification"
+	title.TextColor3 = CONFIG.PrimaryColor
+	title.Font = CONFIG.HeaderFont
+	title.TextSize = 16
+	title.TextXAlignment = Enum.TextXAlignment.Left
+	title.Parent = notif
+	
+	local content = Instance.new("TextLabel")
+	content.Size = UDim2.new(1, -20, 0, 45)
+	content.Position = UDim2.new(0, 10, 0, 30)
+	content.BackgroundTransparency = 1
+	content.Text = config.Content or ""
+	content.TextColor3 = CONFIG.TextColor
+	content.Font = CONFIG.Font
+	content.TextSize = 14
+	content.TextXAlignment = Enum.TextXAlignment.Left
+	content.TextYAlignment = Enum.TextYAlignment.Top
+	content.TextWrapped = true
+	content.Parent = notif
+	
+	notif.Position = UDim2.new(1, 0, 1, -100)
+	TweenService:Create(notif, TweenInfo.new(0.5, Enum.EasingStyle.Back), {
+		Position = UDim2.new(1, -320, 1, -100)
+	}):Play()
+	
+	task.delay(config.Duration or 3, function()
+		TweenService:Create(notif, TweenInfo.new(0.5), {
+			Position = UDim2.new(1, 0, 1, -100)
+		}):Play()
+		task.wait(0.5)
+		notif:Destroy()
+	end)
+end
+
+return CoolGui
